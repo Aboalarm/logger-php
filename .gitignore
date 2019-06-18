@@ -1,0 +1,11 @@
+### PHPSTORM ###
+.idea/*
+/.idea/*
+
+### Composer template
+composer.phar
+/vendor/
+
+### phpunit.xml ###
+phpunit.xml
+

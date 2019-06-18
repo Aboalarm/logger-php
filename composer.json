@@ -1,0 +1,34 @@
+{
+    "name": "aboalarm/logger-php",
+    "license": "",
+    "description": "PHP logger for aboalarm services",
+    "keywords": ["logger", "logging", "aboalarm", "monolog", "graylog"],
+    "authors": [
+        {
+            "name": "Tschela Baumann",
+            "email": "tschela.baumann@aboalarm.de"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "ext-json": "*",
+        "graylog2/gelf-php": "^1.6",
+        "monolog/monolog": "^1.23"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7.3",
+        "orchestra/testbench": "^3.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Aboalarm\\LoggerPhp\\": "src/",
+            "Aboalarm\\LoggerPhp\\Test\\": "tests/"
+        }
+    },
+    "extra": {
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
