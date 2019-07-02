@@ -1,6 +1,6 @@
 <?php
 
-namespace Aboalarm\LoggerPhp\Logger\Processors;
+namespace Aboalarm\LoggerPhp\Logger\Processor;
 
 use Exception;
 use Ramsey\Uuid\Uuid;
@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Class RequestIdProcessor
- * @package aboalarm\LoggerPhp\Logger\Processors
+ * @package aboalarm\LoggerPhp\Logger\Processor
  */
 class RequestIdProcessor
 {
@@ -45,9 +45,11 @@ class RequestIdProcessor
     {
         $request = $this->requestStack->getMasterRequest();
 
-        if ($request && !$this->rid) {
+        if ($request) {
             $this->rid = $request->headers->get(static::HEADER_RID);
-        } else {
+        }
+
+        if (!$this->rid) {
             try {
                 $uuid4 = Uuid::uuid4();
                 $this->rid = $uuid4->toString();
@@ -56,7 +58,7 @@ class RequestIdProcessor
             }
         }
 
-        $record['extra']['aa-request-id'] = $this->rid;
+        $record['extra'][static::HEADER_RID] = $this->rid;
 
         return $record;
     }

@@ -5,15 +5,16 @@
     "keywords": ["logger", "logging", "aboalarm", "monolog", "graylog"],
     "authors": [
         {
-            "name": "Tschela Baumann",
-            "email": "tschela.baumann@aboalarm.de"
+            "name": "Aboalarm GmbH",
+            "email": "technik@aboalarm.de"
         }
     ],
     "require": {
         "php": ">=7.1",
         "ext-json": "*",
         "graylog2/gelf-php": "^1.6",
-        "monolog/monolog": "^1.23"
+        "monolog/monolog": "^1.23",
+        "symfony/messenger": "^4.3"
     },
     "require-dev": {
         "phpunit/phpunit": "^7.3",
@@ -21,11 +22,18 @@
     },
     "autoload": {
         "psr-4": {
-            "Aboalarm\\LoggerPhp\\": "src/",
-            "Aboalarm\\LoggerPhp\\Test\\": "tests/"
+            "Aboalarm\\LoggerPhp\\": "src/"
         }
     },
     "extra": {
+        "laravel": {
+            "providers": [
+                "Aboalarm\\LoggerPhp\\Laravel\\LoggerServiceProvider"
+            ],
+            "aliases": {
+                "Logger": "Aboalarm\\LoggerPhp\\Laravel\\LoggerFacade"
+            }
+        }
     },
     "config": {
         "sort-packages": true

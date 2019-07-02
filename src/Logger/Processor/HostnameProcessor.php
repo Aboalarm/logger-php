@@ -1,6 +1,6 @@
 <?php
 
-namespace Aboalarm\LoggerPhp\Logger\Processors;
+namespace Aboalarm\LoggerPhp\Logger\Processor;
 
 
 /**

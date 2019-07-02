@@ -8,7 +8,7 @@ Based on monolog with Graylog.
 Install the latest version with
 
 ```bash
-$ composer require ...
+$ composer require aboalarm/logger-php
 ```
 
 ## Basic Usage
@@ -16,7 +16,16 @@ $ composer require ...
 
 ## Documentation
 
+## Troubleshooting
 
+### Laravel
+
+#### Verify if the service was detected correctly
+
+    $ php artisan package:discover
+    ...
+    Discovered Package: aboalarm/logger-php
+   
 
 ## About
 

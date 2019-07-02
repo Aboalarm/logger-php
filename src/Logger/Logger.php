@@ -1,26 +1,28 @@
 <?php
 
-
 namespace Aboalarm\LoggerPhp\Logger;
 
+use Aboalarm\LoggerPhp\Logger\Message\LogMessage;
+use Aboalarm\LoggerPhp\Logger\Processor\HostnameProcessor;
+use Aboalarm\LoggerPhp\Logger\Processor\RequestIdProcessor;
 use Exception;
 use Gelf\Transport\HttpTransport;
 use Monolog\Formatter\GelfMessageFormatter;
-use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\GelfHandler;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Handler\StreamHandler;
 use Monolog\Logger as Monolog;
 use Monolog\Processor\WebProcessor;
 use Gelf\Publisher;
+use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Class Logger
  *
- * @package aboalarm\LoggerPhp\Logger
+ * @package Aboalarm\LoggerPhp\Logger
  */
-class Logger
+class Logger implements LoggerInterface
 {
     const LOG_TYPE_UNCAUGHT_EXCEPTION = 'uncaught_exception';
 
@@ -65,57 +67,47 @@ class Logger
     private $useJobQueue;
 
     /**
-     * Logger constructor.
+     * @var MessageBusInterface
      */
-    public function __construct()
-    {
+    private $messageBus;
+
+    /**
+     * Logger constructor.
+     *
+     * @param array $config
+     * @param bool $isLive
+     * @param RequestStack|null $requestStack
+     */
+    public function __construct(
+        array $config,
+        RequestStack $requestStack = null
+    ) {
         // Set minimum log level
-        $minLogLevel = false ? Monolog::INFO : Monolog::DEBUG;
+        $minLogLevel = strpos($config['logger_env'], 'live') !== false ? Monolog::INFO : Monolog::DEBUG;
 
         $this->useJobQueue = false;
-//        $this->loggerName = config('logging.logger_name', 'aboalarm-web-logger');
-//        $this->loggerQueue = config('logging.logger_queue', QueueName::DEFAULT);
-//        $this->logPath = config('logging.log_path');
-//        $this->logRotationFiles = config('logging.log_rotation_files');
-//        $this->graylogHost = config('logging.graylog_host');
-//        $this->graylogPort = config('logging.graylog_port');
+        $this->loggerName = $config['logger_name'];
+        $this->loggerQueue = $config['logger_queue'];
+        $this->graylogHost = $config['graylog_host'];
+        $this->graylogPort = $config['graylog_port'];
 
         $this->log = $this->getMonologInstance();
 
-        // Only log to storage if log path is given
-//        if ($this->logPath) {
-//            $logPath = storage_path() .'/' . $this->logPath;
-//
-//            try {
-//                $streamHandler = new StreamHandler($logPath, $minLogLevel);
-//                $streamHandler->setFormatter(new JsonFormatter());
-//                $this->log->pushHandler($streamHandler);
-//            } catch (Exception $e) {
-//                DatabaseLogger::log('logger.error', self::class . ': Could not push stream handler.');
-//            }
-//
-//            // Only do log rotation if a rotation file number is given
-//            if ($this->logRotationFiles) {
-//                // Set rotation handler
-//                $rotationHandler = new RotatingFileHandler($logPath, 10, $minLogLevel);
-//                $rotationHandler->setFormatter(new JsonFormatter());
-//                $this->log->pushHandler($rotationHandler);
-//            }
-//        }
-
-        // Only log to Graylog, if Graylog host is given
-//        if ($this->graylogHost) {
-            // Set GELF handler
-            $gelfPublisher = new Publisher(
-                new HttpTransport('log.aboalarm.de', '12202')
-            );
-            $gelfHandler = new GelfHandler($gelfPublisher, $minLogLevel);
-            $gelfHandler->setFormatter(new GelfMessageFormatter());
-            $this->log->pushHandler($gelfHandler);
-//        }
+        // Set GELF handler
+        $gelfPublisher = new Publisher(
+            new HttpTransport($this->graylogHost, $this->graylogPort)
+        );
+        $gelfHandler = new GelfHandler($gelfPublisher, $minLogLevel);
+        $gelfHandler->setFormatter(new GelfMessageFormatter());
+        $this->log->pushHandler($gelfHandler);
 
         // Set processors
         $this->log->pushProcessor(new WebProcessor());
+        $this->log->pushProcessor(new HostnameProcessor());
+
+        if ($requestStack) {
+            $this->log->pushProcessor(new RequestIdProcessor($requestStack));
+        }
     }
 
     /**
@@ -128,7 +120,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function debug($message, $context)
+    public function debug($message, array $context = [])
     {
         $this->addRecord(Monolog::DEBUG, $message, $context);
     }
@@ -144,7 +136,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function info($message, $context)
+    public function info($message, array $context = [])
     {
         $this->addRecord(Monolog::INFO, $message, $context);
     }
@@ -160,7 +152,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function notice($message, $context)
+    public function notice($message, array $context = [])
     {
         $this->addRecord(Monolog::NOTICE, $message, $context);
     }
@@ -177,7 +169,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function warning($message, $context)
+    public function warning($message, array $context = [])
     {
         $this->addRecord(Monolog::WARNING, $message, $context);
     }
@@ -193,7 +185,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function error($message, $context)
+    public function error($message, array $context = [])
     {
         $this->addRecord(Monolog::ERROR, $message, $context);
     }
@@ -209,7 +201,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function critical($message, $context)
+    public function critical($message, array $context = [])
     {
         $this->addRecord(Monolog::CRITICAL, $message, $context);
     }
@@ -226,7 +218,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function alert($message, $context)
+    public function alert($message, array $context = [])
     {
         $this->addRecord(Monolog::ALERT, $message, $context);
     }
@@ -242,7 +234,7 @@ class Logger
      * @param  array   $context The log context
      * @return void
      */
-    public function emergency($message, $context)
+    public function emergency($message, array $context = [])
     {
         $this->addRecord(Monolog::EMERGENCY, $message, $context);
     }
@@ -279,16 +271,16 @@ class Logger
     public function addRecord($level, $message, array $context = [], $direct = false)
     {
         try {
-            $context['log_id'] = (string) Uuid::uuid4(); // Add UUID to the context
+            $context['extra']['log_id'] = (string) Uuid::uuid4(); // Add UUID to the context
         } catch (Exception $e) {
-            #DatabaseLogger::log('logger.error', 'Failed to set unique log id: ' . $e->getMessage());
+            error_log('Failed to set unique log id: ' . $e->getMessage());
         }
 
-        $context['log_microtime'] = microtime(true); // Add request micro time to the context
+        $context['extra']['log_microtime'] = microtime(true); // Add request micro time to the context
 
-        if ($this->useJobQueue && !$direct) {
+        if ($this->messageBus && !$direct) {
             try {
-                $this->dispatchLoggingJob($level, $message, $context, $_SERVER);
+                $this->messageBus->dispatch(new LogMessage($level, $message, $context, $_SERVER));
             } catch (Exception $e) {
                 $this->addRecord($level, $message, $context, true);
             }
@@ -296,33 +288,9 @@ class Logger
             try {
                 $this->log->addRecord($level, $message, $context);
             } catch (Exception $e) {
-                #DatabaseLogger::log('logger.error', 'Failed to write log: ' . $e->getMessage());
+                error_log('Failed to write log: ' . $e->getMessage());
             }
         }
-    }
-
-    /**
-     * Dispatch Logging Job
-     *
-     * @param int $level
-     * @param string $message
-     * @param array $context
-     * @param array|null  $serverData
-     */
-    public function dispatchLoggingJob($level, $message, $context, $serverData)
-    {
-        // Because the server data is lost when the job is dispatched, we pass the data to the Job
-        #dispatch((new LoggingJob($level, $message, $context, $serverData))->onQueue($this->loggerQueue));
-    }
-
-    /**
-     * Possibility to pass server data separately
-     *
-     * @param array $serverData
-     */
-    public function setWebProcessor(array $serverData = null)
-    {
-        $this->log->pushProcessor(new WebProcessor($serverData));
     }
 
     /**
@@ -331,5 +299,53 @@ class Logger
     protected function getMonologInstance()
     {
         return new Monolog($this->loggerName);
+    }
+
+    /**
+     * Get MessageBus
+     *
+     * @return MessageBusInterface
+     */
+    public function getMessageBus(): MessageBusInterface
+    {
+        return $this->messageBus;
+    }
+
+    /**
+     * Set MessageBus
+     *
+     * @param MessageBusInterface $messageBus
+     *
+     * @return $this
+     */
+    public function setMessageBus(MessageBusInterface $messageBus = null): Logger
+    {
+        $this->messageBus = $messageBus;
+
+        return $this;
+    }
+
+    /**
+     * Logs with an arbitrary level.
+     *
+     * @param mixed $level
+     * @param string $message
+     * @param array $context
+     *
+     * @return void
+     */
+    public function log($level, $message, array $context = array())
+    {
+        $this->addRecord($level, $message, $context = []);
+    }
+
+    /**
+     * Adds a processor on to the stack.
+     *
+     * @param  callable $callback
+     */
+    public function pushProcessor($callback)
+    {
+        $this->log->pushProcessor($callback);
     }
 }
