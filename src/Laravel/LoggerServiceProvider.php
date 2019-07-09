@@ -3,8 +3,8 @@
 namespace Aboalarm\LoggerPhp\Laravel;
 
 use Aboalarm\LoggerPhp\Logger\Logger;
+use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Class LoggerServiceProvider
@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 class LoggerServiceProvider extends ServiceProvider
 {
     const SERVICE_ALIAS = 'Aboalarm.LoggerPhp';
+
     /**
      * Bootstrap the application events.
      *
@@ -36,9 +37,13 @@ class LoggerServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton(self::SERVICE_ALIAS, function () {
-            $requestStack = null;
+            /** @var Request $request */
+            $request = app(Request::class);
 
-            return new Logger(config()->get('logger_php'), $requestStack);
+            $logger = new Logger(config()->get('logger_php'), Logger::FRAMEWORK_LARAVEL);
+            $logger->setRequestHeaders($request->headers->all());
+
+            return $logger;
         });
     }
 

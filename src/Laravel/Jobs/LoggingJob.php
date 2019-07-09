@@ -1,8 +1,9 @@
 <?php
 
 
-namespace Aboalarm\LoggerPhp\Logger;
+namespace Aboalarm\LoggerPhp\Laravel\Jobs;
 
+use Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -19,14 +20,24 @@ class LoggingJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * Create a new job instance.
-     *
-     * @return void
+     * @var int
      */
     private $level;
+
+    /**
+     * @var string
+     */
     private $message;
-    private $context;
-    private $serverData;
+
+    /**
+     * @var array
+     */
+    private $context = [];
+
+    /**
+     * @var Logger
+     */
+    private $logger;
 
     /**
      * LoggingJob constructor.
@@ -35,13 +46,22 @@ class LoggingJob implements ShouldQueue
      * @param string $message
      * @param array $context
      * @param array $serverData
+     * @param Logger|null $logger
      */
-    public function __construct($level, $message, array $context = [], array $serverData = [])
+    public function __construct($level, $message, array $context = [], array $serverData = [], Logger $logger = null)
     {
+        if($logger) {
+            $this->logger = $logger;
+        } else {
+            $this->logger = app(LoggerServiceProvider::SERVICE_ALIAS);
+            $this->logger->setWebProcessor($serverData);
+        }
+
         $this->level = $level;
         $this->message = $message;
         $this->context = $context;
-        $this->serverData = $serverData;
+
+        $this->context['extra']['is_logging_job'] = true;
     }
 
     /**
@@ -50,12 +70,11 @@ class LoggingJob implements ShouldQueue
      * @param Logger $logger
      * @return void
      */
-    public function handle(Logger $logger)
+    public function handle()
     {
         $this->delete();
         try {
-            $logger->setWebProcessor($this->serverData);
-            $logger->addRecord($this->level, $this->message, $this->context, true);
+            $this->logger->addRecord($this->level, $this->message, $this->context, true);
         } catch (Exception $e) {
             error_log(' LoggingJob FAILED ' . $e->getMessage());
         }

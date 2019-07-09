@@ -2,6 +2,7 @@
 
 namespace Aboalarm\LoggerPhp\Logger;
 
+use Aboalarm\LoggerPhp\Laravel\Jobs\LoggingJob;
 use Aboalarm\LoggerPhp\Logger\Message\LogMessage;
 use Aboalarm\LoggerPhp\Logger\Processor\HostnameProcessor;
 use Aboalarm\LoggerPhp\Logger\Processor\RequestIdProcessor;
@@ -14,7 +15,6 @@ use Monolog\Processor\WebProcessor;
 use Gelf\Publisher;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
@@ -24,6 +24,9 @@ use Symfony\Component\Messenger\MessageBusInterface;
  */
 class Logger implements LoggerInterface
 {
+    const FRAMEWORK_LARAVEL = 'laravel';
+    const FRAMEWORK_SYMFONY = 'symfony';
+
     const LOG_TYPE_UNCAUGHT_EXCEPTION = 'uncaught_exception';
 
     /**
@@ -72,24 +75,30 @@ class Logger implements LoggerInterface
     private $messageBus;
 
     /**
+     * @var array Request headers
+     */
+    private $requestHeaders = [];
+
+    /**
+     * @var string Framework [symfony|laravel]
+     */
+    private $framework;
+
+    /**
      * Logger constructor.
      *
      * @param array $config
-     * @param bool $isLive
-     * @param RequestStack|null $requestStack
+     * @param $framework
      */
-    public function __construct(
-        array $config,
-        RequestStack $requestStack = null
-    ) {
-        // Set minimum log level
-        $minLogLevel = strpos($config['logger_env'], 'live') !== false ? Monolog::INFO : Monolog::DEBUG;
-
-        $this->useJobQueue = false;
+    public function __construct(array $config, $framework)
+    {
+        $this->framework = $framework;
+        $this->useJobQueue = $config['logger_enable_queue'];
         $this->loggerName = $config['logger_name'];
         $this->loggerQueue = $config['logger_queue'];
         $this->graylogHost = $config['graylog_host'];
         $this->graylogPort = $config['graylog_port'];
+        $minLogLevel = $config['logger_min_log_level'];
 
         $this->log = $this->getMonologInstance();
 
@@ -102,12 +111,8 @@ class Logger implements LoggerInterface
         $this->log->pushHandler($gelfHandler);
 
         // Set processors
-        $this->log->pushProcessor(new WebProcessor());
+        $this->setWebProcessor();
         $this->log->pushProcessor(new HostnameProcessor());
-
-        if ($requestStack) {
-            $this->log->pushProcessor(new RequestIdProcessor($requestStack));
-        }
     }
 
     /**
@@ -245,19 +250,19 @@ class Logger implements LoggerInterface
      * @param  Exception $ex The exception instance
      * @return void
      */
-    public function exception(Exception $ex)
+    public function exception(Exception $ex, $direct = false)
     {
         $trace   = $ex->getTrace();
         $message = $ex->getMessage();
 
-        $this->addRecord(Monolog::CRITICAL, 'Uncaught exception', [
+        $this->addRecord(Monolog::CRITICAL, 'Uncaught exception: ' . $ex->getMessage(), [
             'log_type'    => static::LOG_TYPE_UNCAUGHT_EXCEPTION,
             'class'   => get_class($ex),
             'message' => $message,
             'file'    => $ex->getFile(),
             'line'    => $ex->getLine(),
             'trace'   => $trace
-        ]);
+        ], $direct);
     }
 
     /**
@@ -278,18 +283,70 @@ class Logger implements LoggerInterface
 
         $context['extra']['log_microtime'] = microtime(true); // Add request micro time to the context
 
-        if ($this->messageBus && !$direct) {
-            try {
-                $this->messageBus->dispatch(new LogMessage($level, $message, $context, $_SERVER));
-            } catch (Exception $e) {
-                $this->addRecord($level, $message, $context, true);
-            }
+        if($this->useJobQueue && !$direct) {
+            $this->dispatchLoggingJob($level, $message, $context, $_SERVER);
         } else {
             try {
                 $this->log->addRecord($level, $message, $context);
-            } catch (Exception $e) {
+            } catch (Exception $e) {dd($e);
                 error_log('Failed to write log: ' . $e->getMessage());
             }
+        }
+    }
+
+    /**
+     * Dispatch logging job
+     *
+     * @param int $level
+     * @param string $message
+     * @param array $context
+     * @param array $serverData
+     */
+    protected function dispatchLoggingJob($level, $message, array $context = [], array $serverData = [])
+    {
+        if($this->isLaravel()) {
+            $this->dispatchLaravelLoggingJob($level, $message, $context, $serverData);
+        } elseif($this->isSymfony()) {
+            $this->dispatchLaravelLoggingJob($level, $message, $context, $serverData);
+        }
+    }
+
+    /**
+     * Dispatch logging job with Laravel
+     *
+     * @param int $level
+     * @param string $message
+     * @param array $context
+     * @param array $serverData
+     */
+    protected function dispatchLaravelLoggingJob($level, $message, array $context = [], array $serverData = [])
+    {
+        try {
+            dispatch(new LoggingJob($level, $message, $context, $serverData, $this))->onQueue($this->loggerQueue);
+        } catch (Exception $e) {
+            // On job error log directly
+            $this->exception($e, true);
+            $this->addRecord($level, $message, $context, true);
+        }
+    }
+
+    /**
+     * Dispatch logging job with Symfony
+     *
+     * TODO: Not ready yet!!!
+     *
+     * @param int $level
+     * @param string $message
+     * @param array $context
+     * @param array $serverData
+     */
+    protected function dispatchSymfonyLoggingJob($level, $message, array $context = [], array $serverData = [])
+    {
+        try {
+            $this->messageBus->dispatch(new LogMessage($level, $message, $context, $serverData, $this));
+        } catch (Exception $e) {
+            // On job error log directly
+            $this->addRecord($level, $message, $context, true);
         }
     }
 
@@ -347,5 +404,58 @@ class Logger implements LoggerInterface
     public function pushProcessor($callback)
     {
         $this->log->pushProcessor($callback);
+    }
+
+    /**
+     * Get RequestHeaders
+     *
+     * @return array
+     */
+    public function getRequestHeaders(): array
+    {
+        return $this->requestHeaders;
+    }
+
+    /**
+     * Set RequestHeaders
+     *
+     * @param array $requestHeaders
+     *
+     * @return $this
+     */
+    public function setRequestHeaders(array $requestHeaders): Logger
+    {
+        $this->requestHeaders = $requestHeaders;
+        $this->log->pushProcessor(new RequestIdProcessor($this->requestHeaders));
+
+        return $this;
+    }
+
+    /**
+     * Possibility to pass server data separately
+     *
+     * @param array $serverData
+     */
+    public function setWebProcessor(array $serverData = null)
+    {
+
+        $this->log->pushProcessor(new WebProcessor($serverData));
+    }
+
+    /**
+     * @return bool True if Laravel
+     */
+    public function isLaravel()
+    {
+        return ($this->framework === static::FRAMEWORK_LARAVEL);
+    }
+
+
+    /**
+     * @return bool True if Symfony
+     */
+    public function isSymfony()
+    {
+        return ($this->framework === static::FRAMEWORK_SYMFONY);
     }
 }

@@ -23,18 +23,18 @@ class RequestIdProcessor
     private $rid;
 
     /**
-     * @var RequestStack
+     * @var array RequestHeaders
      */
-    private $requestStack;
+    private $requestHeaders;
 
     /**
      * Constructor.
      *
-     * @param RequestStack $stack The request stack
+     * @param array Request headers
      */
-    public function __construct(RequestStack $stack)
+    public function __construct(array $requestHeaders)
     {
-        $this->requestStack = $stack;
+        $this->requestHeaders = $requestHeaders;
     }
 
     /**
@@ -43,10 +43,10 @@ class RequestIdProcessor
      */
     public function __invoke(array $record)
     {
-        $request = $this->requestStack->getMasterRequest();
-
-        if ($request) {
-            $this->rid = $request->headers->get(static::HEADER_RID);
+        if (isset($this->requestHeaders[static::HEADER_RID])) {
+            $this->rid = is_array($this->requestHeaders[static::HEADER_RID]) ?
+                $this->requestHeaders[static::HEADER_RID][0] :
+                $this->requestHeaders[static::HEADER_RID];
         }
 
         if (!$this->rid) {
