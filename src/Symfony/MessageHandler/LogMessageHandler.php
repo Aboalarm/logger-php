@@ -1,9 +1,9 @@
 <?php
 
-namespace Aboalarm\LoggerPhp\Logger\MessageHandler;
+namespace Aboalarm\LoggerPhp\Symfony\MessageHandler;
 
 use Aboalarm\LoggerPhp\Logger\Logger;
-use Aboalarm\LoggerPhp\Logger\Message\LogMessage;
+use Aboalarm\LoggerPhp\Symfony\Message\LogMessage;
 use Exception;
 use Monolog\Processor\WebProcessor;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;

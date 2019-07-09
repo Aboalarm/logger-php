@@ -3,9 +3,8 @@
 namespace Aboalarm\LoggerPhp\Logger;
 
 use Aboalarm\LoggerPhp\Laravel\Jobs\LoggingJob;
-use Aboalarm\LoggerPhp\Logger\Message\LogMessage;
+use Aboalarm\LoggerPhp\Symfony\Message\LogMessage;
 use Aboalarm\LoggerPhp\Logger\Processor\HostnameProcessor;
-use Aboalarm\LoggerPhp\Logger\Processor\RequestIdProcessor;
 use Exception;
 use Gelf\Transport\HttpTransport;
 use Monolog\Formatter\GelfMessageFormatter;
@@ -14,7 +13,6 @@ use Monolog\Logger as Monolog;
 use Monolog\Processor\WebProcessor;
 use Gelf\Publisher;
 use Psr\Log\LoggerInterface;
-use Ramsey\Uuid\Uuid;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
@@ -33,16 +31,6 @@ class Logger implements LoggerInterface
      * @var Monolog
      */
     private $log;
-
-    /**
-     * @var string Log path
-     */
-    private $logPath;
-
-    /**
-     * @var int Number of max. log files
-     */
-    private $logRotationFiles;
 
     /**
      * @var string Logger name
@@ -85,12 +73,17 @@ class Logger implements LoggerInterface
     private $framework;
 
     /**
+     * @var string uuid
+     */
+    private $rid;
+
+    /**
      * Logger constructor.
      *
      * @param array $config
      * @param $framework
      */
-    public function __construct(array $config, $framework)
+    public function __construct(array $config, $framework, $headers = [])
     {
         $this->framework = $framework;
         $this->useJobQueue = $config['logger_enable_queue'];
@@ -98,6 +91,8 @@ class Logger implements LoggerInterface
         $this->loggerQueue = $config['logger_queue'];
         $this->graylogHost = $config['graylog_host'];
         $this->graylogPort = $config['graylog_port'];
+        $this->requestHeaders = $headers;
+        $this->rid = LoggerHelper::getRequestId($this->requestHeaders);
         $minLogLevel = $config['logger_min_log_level'];
 
         $this->log = $this->getMonologInstance();
@@ -106,6 +101,7 @@ class Logger implements LoggerInterface
         $gelfPublisher = new Publisher(
             new HttpTransport($this->graylogHost, $this->graylogPort)
         );
+
         $gelfHandler = new GelfHandler($gelfPublisher, $minLogLevel);
         $gelfHandler->setFormatter(new GelfMessageFormatter());
         $this->log->pushHandler($gelfHandler);
@@ -275,20 +271,15 @@ class Logger implements LoggerInterface
      */
     public function addRecord($level, $message, array $context = [], $direct = false)
     {
-        try {
-            $context['extra']['log_id'] = (string) Uuid::uuid4(); // Add UUID to the context
-        } catch (Exception $e) {
-            error_log('Failed to set unique log id: ' . $e->getMessage());
-        }
-
-        $context['extra']['log_microtime'] = microtime(true); // Add request micro time to the context
+        $context[LoggerHelper::HEADER_RID] = $this->rid;
+        $context['log_microtime'] = microtime(true); // Add request micro time to the context
 
         if($this->useJobQueue && !$direct) {
             $this->dispatchLoggingJob($level, $message, $context, $_SERVER);
         } else {
             try {
                 $this->log->addRecord($level, $message, $context);
-            } catch (Exception $e) {dd($e);
+            } catch (Exception $e) {
                 error_log('Failed to write log: ' . $e->getMessage());
             }
         }
@@ -343,7 +334,7 @@ class Logger implements LoggerInterface
     protected function dispatchSymfonyLoggingJob($level, $message, array $context = [], array $serverData = [])
     {
         try {
-            $this->messageBus->dispatch(new LogMessage($level, $message, $context, $serverData, $this));
+            $this->messageBus->dispatch(new LogMessage($level, $message, $context, $serverData));
         } catch (Exception $e) {
             // On job error log directly
             $this->addRecord($level, $message, $context, true);
@@ -426,7 +417,6 @@ class Logger implements LoggerInterface
     public function setRequestHeaders(array $requestHeaders): Logger
     {
         $this->requestHeaders = $requestHeaders;
-        $this->log->pushProcessor(new RequestIdProcessor($this->requestHeaders));
 
         return $this;
     }
@@ -449,7 +439,6 @@ class Logger implements LoggerInterface
     {
         return ($this->framework === static::FRAMEWORK_LARAVEL);
     }
-
 
     /**
      * @return bool True if Symfony

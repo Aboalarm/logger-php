@@ -1,11 +1,11 @@
 <?php
 
-namespace Aboalarm\LoggerPhp\Logger\Message;
+namespace Aboalarm\LoggerPhp\Symfony\Message;
 
 /**
  * Class LogMessage
  *
- * @package Aboalarm\LoggerPhp\Logger\Message
+ * @package Aboalarm\LoggerPhp\Symfony\Message
  */
 class LogMessage
 {

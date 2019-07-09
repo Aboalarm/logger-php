@@ -7,6 +7,18 @@ General info about logging at aboalarm: https://aboalarm.atlassian.net/wiki/spac
 
 ## Installation
 
+Add the repository to the _composer.json_
+
+```
+"repositories": {
+    "logger-php": {
+        "type": "vcs",
+        "url": "https://github.com/Aboalarm/logger-php"
+    },
+    ...
+}
+```
+
 Install the latest version with
 
 ```bash
