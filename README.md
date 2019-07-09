@@ -8,7 +8,19 @@ Based on monolog with Graylog.
 Install the latest version with
 
 ```bash
-$ composer require aboalarm/logger-php
+$ composer require aboalarm/logger-php @dev
+```
+
+If you install from you host system
+
+```bash
+$ composer require aboalarm/logger-php @dev --ignore-platform-reqs --no-scripts
+```
+
+Or via composer
+
+```bash
+$ docker-compose exec -u www-data app composer require aboalarm/logger-php @dev
 ```
 
 ### Laravel
@@ -34,6 +46,8 @@ Add new logging vars to the _**.env**_
 ```ini
 LOGGING_LOGGER_NAME=<logger-name>
 LOGGING_LOGGER_QUEUE=<logger-queue-name>
+LOGGING_LOGGER_ENABLE_QUEUE=<true|false>
+LOGGING_LOGGER_MIN_LOG_LEVEL=100
 LOGGING_GRAYLOG_HOST=<graylog-host>
 LOGGING_GRAYLOG_PORT=<graylog-port>
 
@@ -46,7 +60,6 @@ LOGGING_GRAYLOG_PORT=<graylog-port>
     'info1' => 'foo',
     'info2' => $bar
 ]);
-
 ```
 
 ## Log Server
