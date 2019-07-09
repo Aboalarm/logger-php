@@ -3,6 +3,8 @@
 
 Based on monolog with Graylog.
 
+General info about logging at aboalarm: https://aboalarm.atlassian.net/wiki/spaces/DEV/pages/61505603/08+Logging
+
 ## Installation
 
 Install the latest version with
@@ -25,18 +27,6 @@ $ docker-compose exec -u www-data app composer require aboalarm/logger-php @dev
 
 ### Laravel
 
-Extend **_config/app.php_**
-
-```php
-'providers' => [
-    \Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider::class,
-],
-'aliases' => [
-    'Logger' => \Aboalarm\LoggerPhp\Laravel\LoggerFacade::class,
-]
-
-```
-
 Add **_config/logger_php.php_**
 
 And copy the content of _src/Laravel/config/config.php_ into _logger_php.php_.
@@ -55,12 +45,33 @@ LOGGING_GRAYLOG_PORT=<graylog-port>
 
 ## Basic Usage
 
+After the installation you will have a new Facade `\Logger` which is linking 
+to the `\Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider`.
+
+
 ```php
 \Logger::warning('This is my log message.', [
     'info1' => 'foo',
     'info2' => $bar
 ]);
 ```
+
+Available logging methods
+
+- debug
+- info
+- notice
+- warning
+- error
+- critical
+- alert
+- emergency
+
+More about the log levels: https://aboalarm.atlassian.net/wiki/spaces/DEV/pages/61505603/08+Logging#id-08Logging-Loglevels
+
+Special
+
+- exception
 
 ## Log Server
 
@@ -76,4 +87,5 @@ Login in 1Password.
     $ php artisan package:discover
     ...
     Discovered Package: aboalarm/logger-php
+    ...
    
