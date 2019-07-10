@@ -55,6 +55,24 @@ LOGGING_GRAYLOG_PORT=<graylog-port>
 
 ```
 
+Each service should have its own logger name:
+
+- aboalarm Core: `LOGGING_LOGGER_NAME=aboalarm-web-logger`
+- Provider Service: `LOGGING_LOGGER_NAME=provider-service-logger`
+- Banner-Mananger: `LOGGING_LOGGER_NAME=banner-manager-logger`
+- Allianz: `LOGGING_LOGGER_NAME=aboalarm-allianz-logger`
+
+Log levels:
+
+- DEBUG: `100`
+- INFO: `200`
+- NOTICE: `250`
+- WARNING: `300`
+- ERROR: `400`
+- CRITICAL: `500`
+- ALERT: `550`
+- EMERGENCY: `600`
+
 ## Basic Usage
 
 After the installation you will have a new Facade `\Logger` which is linking 
