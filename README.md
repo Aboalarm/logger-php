@@ -39,9 +39,9 @@ $ docker-compose exec -u www-data app composer require aboalarm/logger-php @dev
 
 ### Laravel
 
-Add **_config/logger_php.php_**
+Publish **_config/logger_php.php_**
 
-And copy the content of _src/Laravel/config/config.php_ into _logger_php.php_.
+via `artisan vendor:publish` (and select the `Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider`)
 
 Add new logging vars to the _**.env**_
 
