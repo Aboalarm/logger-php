@@ -48,6 +48,12 @@ class LoggerServiceProvider extends ServiceProvider
 
             return $logger;
         });
+
+        // use the default config if its not already published
+        $this->mergeConfigFrom(
+            __DIR__.'/config/config.php',
+            'logger-php'
+        );
     }
 
     /**
