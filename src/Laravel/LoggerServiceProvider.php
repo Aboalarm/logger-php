@@ -36,6 +36,12 @@ class LoggerServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        // use the default config if its not already published
+        $this->mergeConfigFrom(
+            __DIR__.'/config/config.php',
+            'loggerphp'
+        );
+
         $this->app->singleton(self::SERVICE_ALIAS, function () {
             /** @var Request $request */
             $request = app(Request::class);
@@ -48,12 +54,6 @@ class LoggerServiceProvider extends ServiceProvider
 
             return $logger;
         });
-
-        // use the default config if its not already published
-        $this->mergeConfigFrom(
-            __DIR__.'/config/config.php',
-            'logger-php'
-        );
     }
 
     /**
