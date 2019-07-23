@@ -47,7 +47,7 @@ class LoggerServiceProvider extends ServiceProvider
             $request = app(Request::class);
 
             $logger = new Logger(
-                config()->get('logger_php'),
+                config('logger_php', []),
                 Logger::FRAMEWORK_LARAVEL,
                 $request->headers->all()
             );
