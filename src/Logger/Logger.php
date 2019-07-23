@@ -271,7 +271,7 @@ class Logger implements LoggerInterface
      */
     public function addRecord($level, $message, array $context = [], $direct = false)
     {
-        $context[LoggerHelper::HEADER_RID] = $this->rid;
+        $context[LoggerHelper::HEADER_RID] = $context[LoggerHelper::HEADER_RID] ?? $this->rid;
         $context['log_microtime'] = microtime(true); // Add request micro time to the context
 
         if($this->useJobQueue && !$direct) {
