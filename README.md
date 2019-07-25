@@ -37,13 +37,7 @@ Or via composer
 $ docker-compose exec -u www-data app composer require aboalarm/logger-php @dev
 ```
 
-### Laravel
-
-Add **_config/logger_php.php_**
-
-And copy the content of _src/Laravel/config/config.php_ into _logger_php.php_.
-
-Add new logging vars to the _**.env**_
+## .env
 
 ```ini
 LOGGING_LOGGER_NAME=<logger-name>
@@ -54,6 +48,37 @@ LOGGING_GRAYLOG_HOST=<graylog-host>
 LOGGING_GRAYLOG_PORT=<graylog-port>
 
 ```
+
+The package is also looking at `APP_ENV`, which already exists in Laravel & Symfony.
+
+## Framework requirements
+
+### Laravel
+
+Add **_config/logger_php.php_**
+
+And copy the content of _src/Laravel/config/config.php_ into _logger_php.php_.
+
+Add new logging vars to the _**.env**_
+
+
+### Symfony
+
+Additional configration:
+
+See 
+ - _Symfony/.env.symfony_
+ - _Symfony/config/..._
+
+The redis transport requires php-redis 4.3.0 or higher.
+See: https://serverpilot.io/docs/how-to-install-the-php-redis-extension
+
+Consume dispatched messages
+
+```
+php bin/console messenger:consume
+```
+
 
 ## Basic Usage
 
@@ -79,16 +104,13 @@ Available logging methods
 - alert
 - emergency
 
-More about the log levels: https://aboalarm.atlassian.net/wiki/spaces/DEV/pages/61505603/08+Logging#id-08Logging-Loglevels
-
 Special
 
 - exception
 
 ## Log Server
 
-You can find and analyse the log on our log server: https://log.aboalarm.de
-Login in 1Password.
+You can find and analyse the log on our log server.
 
 ## Troubleshooting
 
