@@ -13,6 +13,7 @@ use Monolog\Logger as Monolog;
 use Monolog\Processor\WebProcessor;
 use Gelf\Publisher;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
@@ -308,7 +309,7 @@ class Logger implements LoggerInterface
         if($this->isLaravel()) {
             $this->dispatchLaravelLoggingJob($level, $message, $context, $serverData);
         } elseif($this->isSymfony()) {
-            $this->dispatchLaravelLoggingJob($level, $message, $context, $serverData);
+            $this->dispatchSymfonyLoggingJob($level, $message, $context, $serverData);
         }
     }
 
@@ -325,6 +326,7 @@ class Logger implements LoggerInterface
         try {
             dispatch(new LoggingJob($level, $message, $context, $serverData, $this))->onQueue($this->loggerQueue);
         } catch (Exception $e) {
+            error_log('Failed to dispatch Symfony log: ' . $e->getMessage());
             // On job error log directly
             $this->exception($e, true);
             $this->addRecord($level, $message, $context, true);
@@ -346,6 +348,7 @@ class Logger implements LoggerInterface
         try {
             $this->messageBus->dispatch(new LogMessage($level, $message, $context, $serverData));
         } catch (Exception $e) {
+            error_log('Failed to dispatch Symfony log: ' . $e->getMessage());
             // On job error log directly
             $this->addRecord($level, $message, $context, true);
         }
@@ -435,11 +438,14 @@ class Logger implements LoggerInterface
      * Possibility to pass server data separately
      *
      * @param array $serverData
+     *
+     * @return Logger
      */
     public function setWebProcessor(array $serverData = null)
     {
-
         $this->log->pushProcessor(new WebProcessor($serverData));
+
+        return $this;
     }
 
     /**
@@ -464,5 +470,20 @@ class Logger implements LoggerInterface
     public function isTestEnv()
     {
         return stripos($this->env, 'testing') !== false ? true : false;
+    }
+
+    /**
+     * For Symfony you can hand over the request stack to get the header params
+     *
+     * @param RequestStack $requestStack
+     *
+     * @return Logger
+     */
+    public function setSymfonyRequestStack(RequestStack $requestStack)
+    {
+        $this->setRequestHeaders($requestStack->getMasterRequest()->headers->all());
+        $this->rid = LoggerHelper::getRequestId($this->requestHeaders);
+
+        return $this;
     }
 }

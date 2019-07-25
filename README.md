@@ -1,6 +1,5 @@
 # PHP Logger aboalarm services
 
-
 Based on monolog with Graylog.
 
 General info about logging at aboalarm: https://aboalarm.atlassian.net/wiki/spaces/DEV/pages/61505603/08+Logging
@@ -9,7 +8,7 @@ General info about logging at aboalarm: https://aboalarm.atlassian.net/wiki/spac
 
 Add the repository to the _composer.json_
 
-```
+```json
 "repositories": {
     "logger-php": {
         "type": "vcs",
@@ -22,28 +21,23 @@ Add the repository to the _composer.json_
 Install the latest version with
 
 ```bash
-$ composer require aboalarm/logger-php @dev
+$ composer require aboalarm/logger-php "~0.1"
 ```
+_Verify the current version._
 
 If you install from you host system
 
 ```bash
-$ composer require aboalarm/logger-php @dev --ignore-platform-reqs --no-scripts
+$ composer require aboalarm/logger-php "~0.1" --ignore-platform-reqs --no-scripts
 ```
 
 Or via composer
 
 ```bash
-$ docker-compose exec -u www-data app composer require aboalarm/logger-php @dev
+$ docker-compose exec -u www-data app composer require aboalarm/logger-php "~0.1"
 ```
 
-### Laravel
-
-Publish **_config/logger_php.php_**
-
-via `artisan vendor:publish` (and select the `Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider`)
-
-Add new logging vars to the _**.env**_
+## .env
 
 ```ini
 LOGGING_LOGGER_NAME=<logger-name>
@@ -52,7 +46,6 @@ LOGGING_LOGGER_ENABLE_QUEUE=<true|false>
 LOGGING_LOGGER_MIN_LOG_LEVEL=100
 LOGGING_GRAYLOG_HOST=<graylog-host>
 LOGGING_GRAYLOG_PORT=<graylog-port>
-
 ```
 
 Each service should have its own logger name:
@@ -73,11 +66,45 @@ Log levels:
 - ALERT: `550`
 - EMERGENCY: `600`
 
-## Basic Usage
+The package is also looking at `APP_ENV`, which already exists in Laravel & Symfony.
+
+## Framework requirements
+
+### Laravel
+
+Add **_config/logger_php.php_**
+
+And copy the content of _src/Laravel/config/config.php_ into _logger_php.php_.
+
+Add new logging vars to the _**.env**_
 
 After the installation you will have a new Facade `\Logger` which is linking 
-to the `\Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider`.
+to the `\Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider` which returns 
+an instance of `\Aboalarm\LoggerPhp\Logger`.
 
+
+### Symfony
+
+Additional configuration:
+
+See 
+ - _Symfony/.env.symfony_
+ - _Symfony/config/..._
+
+The redis transport requires php-redis 4.3.0 or higher.
+See: https://serverpilot.io/docs/how-to-install-the-php-redis-extension
+
+Consume dispatched messages
+
+```
+php bin/console messenger:consume
+```
+
+After the installation you will have a new Facade `\Logger` which is linking 
+to `\Aboalarm\LoggerPhp\Logger`.
+
+
+## Basic Usage
 
 ```php
 \Logger::warning('This is my log message.', [
@@ -97,16 +124,20 @@ Available logging methods
 - alert
 - emergency
 
-More about the log levels: https://aboalarm.atlassian.net/wiki/spaces/DEV/pages/61505603/08+Logging#id-08Logging-Loglevels
-
 Special
 
 - exception
 
 ## Log Server
 
-You can find and analyse the log on our log server: https://log.aboalarm.de
-Login in 1Password.
+You can find and analyse the logs on our log server:
+
+https://log.aboalarm.de
+
+There are several log input streams (https://log.aboalarm.de/system/inputs).
+
+Out log are stored in the "Aboalarm Gelf HTTP" stream:
+https://log.aboalarm.de/search?rangetype=relative&fields=message%2Csource&width=1659&highlightMessage=&relative=0&q=gl2_source_input%3A5bcf05962a7d308388eeb4d4
 
 ## Troubleshooting
 
@@ -114,8 +145,9 @@ Login in 1Password.
 
 #### Verify if the service was detected correctly
 
-    $ php artisan package:discover
-    ...
-    Discovered Package: aboalarm/logger-php
-    ...
-   
+```bash
+$ php artisan package:discover
+...
+Discovered Package: aboalarm/logger-php
+...
+```
