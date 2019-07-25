@@ -76,6 +76,11 @@ class Logger implements LoggerInterface
      * @var string uuid
      */
     private $rid;
+    
+    /**
+     * @var string env
+     */
+    private $env;
 
     /**
      * Logger constructor.
@@ -91,6 +96,7 @@ class Logger implements LoggerInterface
         $this->loggerQueue = $config['logger_queue'];
         $this->graylogHost = $config['graylog_host'];
         $this->graylogPort = $config['graylog_port'];
+        $this->env = $config['logger_env'];
         $this->requestHeaders = $headers;
         $this->rid = LoggerHelper::getRequestId($this->requestHeaders);
         $minLogLevel = $config['logger_min_log_level'];
@@ -271,6 +277,10 @@ class Logger implements LoggerInterface
      */
     public function addRecord($level, $message, array $context = [], $direct = false)
     {
+        if($this->isTextEnv()) {
+            return;
+        }
+        
         $context[LoggerHelper::HEADER_RID] = $context[LoggerHelper::HEADER_RID] ?? $this->rid;
         $context['log_microtime'] = microtime(true); // Add request micro time to the context
 
@@ -446,5 +456,13 @@ class Logger implements LoggerInterface
     public function isSymfony()
     {
         return ($this->framework === static::FRAMEWORK_SYMFONY);
+    }
+    
+    /**
+     * @return bool True if test env
+     */
+    public function isTextEnv()
+    {
+        return stripos($this->env, 'test') !== false ? true : false;
     }
 }
