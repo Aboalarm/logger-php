@@ -277,7 +277,7 @@ class Logger implements LoggerInterface
      */
     public function addRecord($level, $message, array $context = [], $direct = false)
     {
-        if($this->isTextEnv()) {
+        if($this->isTestEnv()) {
             return;
         }
         
@@ -461,7 +461,7 @@ class Logger implements LoggerInterface
     /**
      * @return bool True if test env
      */
-    public function isTextEnv()
+    public function isTestEnv()
     {
         return stripos($this->env, 'test') !== false ? true : false;
     }
