@@ -463,6 +463,6 @@ class Logger implements LoggerInterface
      */
     public function isTestEnv()
     {
-        return stripos($this->env, 'test') !== false ? true : false;
+        return stripos($this->env, 'testing') !== false ? true : false;
     }
 }
