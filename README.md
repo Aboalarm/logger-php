@@ -89,7 +89,7 @@ Additional configuration:
 
 See 
  - _Symfony/.env.symfony_
- - _Symfony/config/..._
+ - _Symfony/config/services.yaml_ (Include the file to your serices.yaml or copy and paste the content into your file)
 
 The redis transport requires php-redis 4.3.0 or higher.
 See: https://serverpilot.io/docs/how-to-install-the-php-redis-extension

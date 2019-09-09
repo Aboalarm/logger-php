@@ -11,6 +11,7 @@ services:
         logger_min_log_level: '%env(LOGGING_LOGGER_MIN_LOG_LEVEL)%'
         logger_enable_queue: '%env(LOGGING_LOGGER_ENABLE_QUEUE)%'
         logger_queue: '%env(LOGGING_LOGGER_QUEUE)%'
+        logger_env: '%env(APP_ENV)%'
       - 'symfony'
     calls:
       - [ setMessageBus, ['@messenger.bus.default']]
