@@ -20,6 +20,8 @@ class LogMessage
         $this->message = $message;
         $this->context = $context;
         $this->serverData = $serverData;
+
+        $this->context['extra']['is_logging_job'] = true;
     }
 
     /**
