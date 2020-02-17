@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "php": ">=7.1",
+        "php": ">=7.3",
         "ext-json": "*",
         "graylog2/gelf-php": "^1.6",
         "monolog/monolog": "^1.23",
