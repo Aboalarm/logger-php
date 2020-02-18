@@ -4,13 +4,14 @@ namespace Aboalarm\LoggerPhp\Laravel;
 
 use Aboalarm\LoggerPhp\Logger\Logger;
 use Illuminate\Http\Request;
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider;
+use Illuminate\Log\Events\MessageLogged;
 
 /**
  * Class LoggerServiceProvider
  * @package Aboalarm\LoggerPhp\Laravel
  */
-class LoggerServiceProvider extends ServiceProvider
+class LoggerServiceProvider extends EventServiceProvider
 {
     const SERVICE_ALIAS = 'Aboalarm.LoggerPhp';
 
@@ -21,6 +22,8 @@ class LoggerServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $this->app['events']->listen(MessageLogged::class, MessageLoggedListener::class);
+
         $this->publishes(
             [
                 __DIR__.'/config/config.php' => config_path('logger_php.php'),
