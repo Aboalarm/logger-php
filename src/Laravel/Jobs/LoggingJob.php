@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Aboalarm\LoggerPhp\Laravel\Jobs;
 
 use Aboalarm\LoggerPhp\Laravel\LoggerServiceProvider;
@@ -17,66 +16,64 @@ use Aboalarm\LoggerPhp\Logger\Logger;
  */
 class LoggingJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+	use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * @var int
-     */
-    private $level;
+	/**
+	 * @var int
+	 */
+	private $level;
+	/**
+	 * @var string
+	 */
+	private $message;
+	/**
+	 * @var array
+	 */
+	private $context = [];
+	/**
+	 * @var Logger
+	 */
+	private $logger;
 
-    /**
-     * @var string
-     */
-    private $message;
-
-    /**
-     * @var array
-     */
-    private $context = [];
-
-    /**
-     * @var Logger
-     */
-    private $logger;
-
-    /**
-     * LoggingJob constructor.
-     *
-     * @param string $level
-     * @param string $message
-     * @param array $context
-     * @param array $serverData
-     * @param Logger|null $logger
-     */
-    public function __construct($level, $message, array $context = [], array $serverData = [], Logger $logger = null)
-    {
-        if($logger) {
-            $this->logger = $logger;
-        } else {
-            $this->logger = app(LoggerServiceProvider::SERVICE_ALIAS);
-            $this->logger->setWebProcessor($serverData);
-        }
+	/**
+	 * LoggingJob constructor.
+	 *
+	 * @param string      $level
+	 * @param string      $message
+	 * @param array       $context
+	 * @param array       $serverData
+	 * @param Logger|null $logger
+	 */
+	public function __construct($level, $message, array $context = [], array $serverData = [], Logger $logger = null)
+	{
+		if ($logger) {
+			$this->logger = $logger;
+		} else {
+			$this->logger = app(LoggerServiceProvider::SERVICE_ALIAS);
+			$this->logger->setWebProcessor($serverData);
+		}
 
         $this->level = $level;
         $this->message = $message;
         $this->context = $context;
 
-        $this->context['extra']['is_logging_job'] = true;
-    }
+		$this->context['extra']['is_logging_job'] = true;
+	}
 
-    /**
-     * Log message
-     *
-     * @param Logger $logger
-     * @return void
-     */
-    public function handle()
-    {
-        $this->delete();
-        try {
-            $this->logger->addRecord($this->level, $this->message, $this->context, true);
-        } catch (Exception $e) {
-            error_log(' LoggingJob FAILED ' . $e->getMessage());
-        }
-    }
+	/**
+	 * Log message
+	 *
+	 * @return void
+	 */
+	public function handle()
+	{
+		$this->delete();
+
+
+		try {
+			$this->logger->addRecord($this->level, $this->message, $this->context, true);
+		} catch (Exception $e) {
+			error_log(' LoggingJob FAILED ' . $e->getMessage());
+		}
+	}
 }
