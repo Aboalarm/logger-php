@@ -30,46 +30,57 @@ class Logger implements LoggerInterface
 	 * @var Monolog
 	 */
 	private $log;
+	
 	/**
 	 * @var boolean
 	 */
 	private $logger_active;
+	
 	/**
 	 * @var string Logger name
 	 */
 	private $loggerName;
+	
 	/**
 	 * @var string Logger queue
 	 */
 	private $loggerQueue;
+	
 	/**
 	 * @var string Graylog host
 	 */
 	private $graylogHost;
+	
 	/**
 	 * @var int Graylog port
 	 */
 	private $graylogPort;
+	
 	/**
 	 * @var bool
 	 */
 	private $useJobQueue;
+	
 	/**
 	 * @var MessageBusInterface
 	 */
 	private $messageBus;
+	
 	/**
 	 * @var array Request headers
 	 */
 	private $requestHeaders = [];
+	
 	/**
 	 * @var string Framework [symfony|laravel]
 	 */
 	private $framework;
+	
 	/**
 	 * @var string uuid
 	 */
 	private $rid;
+	
 	/**
 	 * @var string env
 	 */

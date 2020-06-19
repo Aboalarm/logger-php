@@ -22,14 +22,17 @@ class LoggingJob implements ShouldQueue
 	 * @var int
 	 */
 	private $level;
+	
 	/**
 	 * @var string
 	 */
 	private $message;
+	
 	/**
 	 * @var array
 	 */
 	private $context = [];
+	
 	/**
 	 * @var Logger
 	 */
