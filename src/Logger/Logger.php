@@ -104,7 +104,7 @@ class Logger implements LoggerInterface
 		$this->env            = $config['logger_env'];
 		$this->requestHeaders = $headers;
 		$this->rid            = LoggerHelper::getRequestId($this->requestHeaders);
-		$minLogLevel          = $config['logger_min_log_level'];
+		$minLogLevel          = (int) $config['logger_min_log_level'];
 
 		$this->log = $this->getMonologInstance();
 
