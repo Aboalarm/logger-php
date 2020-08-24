@@ -8,7 +8,9 @@ use Aboalarm\LoggerPhp\Logger\Processor\HostnameProcessor;
 use Exception;
 use Gelf\Transport\HttpTransport;
 use Monolog\Formatter\GelfMessageFormatter;
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\GelfHandler;
+use Monolog\Handler\SyslogHandler;
 use Monolog\Logger as Monolog;
 use Monolog\Processor\WebProcessor;
 use Gelf\Publisher;
@@ -26,7 +28,7 @@ class Logger implements LoggerInterface
     const FRAMEWORK_LARAVEL = 'laravel';
     const FRAMEWORK_SYMFONY = 'symfony';
 
-    const LOG_TYPE_UNCAUGHT_EXCEPTION = 'uncaught_exception';
+    const LOG_TYPE_EXCEPTION = 'exception';
 
     /**
      * @var Monolog
@@ -104,18 +106,35 @@ class Logger implements LoggerInterface
 
         $this->log = $this->getMonologInstance();
 
-        // Set GELF handler
-        $gelfPublisher = new Publisher(
-            new HttpTransport($this->graylogHost, $this->graylogPort)
-        );
+        if ($this->graylogHost && $this->graylogPort) {
+            // Set GELF handler
+            $gelfPublisher = new Publisher(
+                new HttpTransport($this->graylogHost, $this->graylogPort)
+            );
 
-        $gelfHandler = new GelfHandler($gelfPublisher, $minLogLevel);
-        $gelfHandler->setFormatter(new GelfMessageFormatter());
-        $this->log->pushHandler($gelfHandler);
+            $gelfHandler = new GelfHandler($gelfPublisher, $minLogLevel);
+            $gelfHandler->setFormatter(new GelfMessageFormatter());
+            $this->log->pushHandler($gelfHandler);
+        } else {
+            $syslog = new SyslogHandler($this->loggerName);
+            $formatter = new LineFormatter("%channel%.%level_name%: %message% %extra%");
+            $syslog->setFormatter($formatter);
+            $this->log->pushHandler($syslog);
+        }
 
         // Set processors
         $this->setWebProcessor();
         $this->log->pushProcessor(new HostnameProcessor());
+    }
+
+    /**
+     * Get request id
+     *
+     * @return string (UUID)
+     */
+    public function getRequestId()
+    {
+        return $this->rid;
     }
 
     /**
@@ -250,22 +269,30 @@ class Logger implements LoggerInterface
     /**
      * Adds a log entry at the CRITICAL level, containing an exception.
      *
-     * @param  Exception $ex The exception instance
+     * @param Exception $ex The exception instance
+     * @param bool $direct
+     * @param null $message
+     * @param array $context
      * @return void
      */
-    public function exception(Exception $ex, $direct = false)
+    public function exception(Exception $ex, $direct = false, $message = null, $context = [])
     {
         $trace   = $ex->getTrace();
-        $message = $ex->getMessage();
+        $message = $message ? $message : $ex->getMessage();
+        $defaultContext = [
+            'log_type'  => static::LOG_TYPE_EXCEPTION,
+            'exception' => [
+                'exception' => get_class($ex),
+                'message'   => $ex->getMessage(),
+                'file'      => $ex->getFile(),
+                'line'      => $ex->getLine(),
+                'trace'     => $trace
+            ]
+        ];
 
-        $this->addRecord(Monolog::CRITICAL, 'Uncaught exception: ' . $ex->getMessage(), [
-            'log_type'    => static::LOG_TYPE_UNCAUGHT_EXCEPTION,
-            'class'   => get_class($ex),
-            'message' => $message,
-            'file'    => $ex->getFile(),
-            'line'    => $ex->getLine(),
-            'trace'   => $trace
-        ], $direct);
+        $context = array_merge($defaultContext, $context); // Custom overwrites default
+
+        $this->addRecord(Monolog::CRITICAL, $message, $context, $direct);
     }
 
     /**
