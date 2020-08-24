@@ -34,6 +34,11 @@ class Logger implements LoggerInterface
      * @var Monolog
      */
     private $log;
+    
+    /**
+	 * @var boolean
+	 */
+	private $loggerActive;
 
     /**
      * @var string Logger name
@@ -94,15 +99,16 @@ class Logger implements LoggerInterface
     public function __construct(array $config, $framework, $headers = [])
     {
         $this->framework = $framework;
+        $this->loggerActive  = $config['logger_active'];
         $this->useJobQueue = $config['logger_enable_queue'];
         $this->loggerName = $config['logger_name'];
         $this->loggerQueue = $config['logger_queue'];
         $this->graylogHost = $config['graylog_host'];
-        $this->graylogPort = $config['graylog_port'];
+        $this->graylogPort = (int) $config['graylog_port'];
         $this->env = $config['logger_env'];
         $this->requestHeaders = $headers;
         $this->rid = LoggerHelper::getRequestId($this->requestHeaders);
-        $minLogLevel = $config['logger_min_log_level'];
+        $minLogLevel = (int) $config['logger_min_log_level'];
 
         $this->log = $this->getMonologInstance();
 
@@ -306,7 +312,7 @@ class Logger implements LoggerInterface
      */
     public function addRecord($level, $message, array $context = [], $direct = false)
     {
-        if($this->isTestEnv()) {
+        if($this->isTestEnv() || !$this->loggerActive) {
             return;
         }
         
@@ -334,6 +340,10 @@ class Logger implements LoggerInterface
      */
     protected function dispatchLoggingJob($level, $message, array $context = [], array $serverData = [])
     {
+        if (!$this->loggerActive) {
+			return;
+		}
+        
         if($this->isLaravel()) {
             $this->dispatchLaravelLoggingJob($level, $message, $context, $serverData);
         } elseif($this->isSymfony()) {
@@ -423,7 +433,7 @@ class Logger implements LoggerInterface
      *
      * @return void
      */
-    public function log($level, $message, array $context = array())
+    public function log($level, $message, array $context = [])
     {
         $this->addRecord($level, $message, $context = []);
     }
