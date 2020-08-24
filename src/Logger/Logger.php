@@ -269,18 +269,19 @@ class Logger implements LoggerInterface
     /**
      * Adds a log entry at the CRITICAL level, containing an exception.
      *
-     * @param Exception $ex The exception instance
-     * @param bool $direct
-     * @param null $message
-     * @param array $context
+     * @param  Exception   $ex  The exception instance
+     * @param  bool        $direct
+     * @param  string|null $message
+     * @param  array       $context
+     * @param  string|null $logIdentifier
      * @return void
      */
-    public function exception(Exception $ex, $direct = false, $message = null, $context = [])
+    public function exception(Exception $ex, $direct = false, $message = null, $context = [], $logIdentifier = null)
     {
         $trace   = $ex->getTrace();
         $message = $message ? $message : $ex->getMessage();
         $defaultContext = [
-            'log_type'  => static::LOG_TYPE_EXCEPTION,
+            'log_identifier' => $logIdentifier ?? static::LOG_TYPE_EXCEPTION,
             'exception' => [
                 'exception' => get_class($ex),
                 'message'   => $ex->getMessage(),
