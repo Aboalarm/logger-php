@@ -143,177 +143,73 @@ class Logger implements LoggerInterface
         return $this->rid;
     }
 
-    /**
-     * Adds a log record at the DEBUG level.
-     * E.g. Detailed information on the flow through the system. Expect these to be written to logs only.
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function debug($message, array $context = [])
+    public function debug($message, array $context = [], Exception $e = null): ?string
     {
-        $this->addRecord(Monolog::DEBUG, $message, $context);
+        return $this->addRecord(Monolog::DEBUG, $message, $context, false, $e);
+    }
+
+    public function info($message, array $context = [], Exception $e = null): ?string
+    {
+        return $this->addRecord(Monolog::INFO, $message, $context, false, $e);
+    }
+
+    public function notice($message, array $context = [], Exception $e = null): ?string
+    {
+        return $this->addRecord(Monolog::NOTICE, $message, $context, false, $e);
+    }
+
+    public function warning($message, array $context = [], Exception $e = null): ?string
+    {
+        return $this->addRecord(Monolog::WARNING, $message, $context, false, $e);
+    }
+
+    public function error($message, array $context = [], Exception $e = null): ?string
+    {
+        return $this->addRecord(Monolog::ERROR, $message, $context, false, $e);
+    }
+
+    public function critical($message, array $context = [], Exception $e = null): ?string
+    {
+        return $this->addRecord(Monolog::CRITICAL, $message, $context, false, $e);
+    }
+
+    public function alert($message, array $context = [], Exception $e = null): ?string
+    {
+        return $this->addRecord(Monolog::ALERT, $message, $context, false, $e);
+    }
+
+    public function emergency($message, array $context = [], Exception $e = null): ?string
+    {
+        return $this->addRecord(Monolog::EMERGENCY, $message, $context, false, $e);
     }
 
     /**
-     * Adds a log record at the INFO level.
-     *
-     * For interesting runtime events (startup/shutdown)
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function info($message, array $context = [])
-    {
-        $this->addRecord(Monolog::INFO, $message, $context);
-    }
-
-    /**
-     * Adds a log record at the NOTICE level.
-     *
-     * Normal but significant events
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function notice($message, array $context = [])
-    {
-        $this->addRecord(Monolog::NOTICE, $message, $context);
-    }
-
-    /**
-     * Adds a log record at the WARNING level.
-     *
-     * Use of deprecated APIs, poor use of API, 'almost' errors, other runtime situations that are undesirable or
-     * unexpected, but not necessarily "wrong". Expect these to be immediately visible on a status console.
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function warning($message, array $context = [])
-    {
-        $this->addRecord(Monolog::WARNING, $message, $context);
-    }
-
-    /**
-     * Adds a log record at the ERROR level.
-     *
-     * Runtime errors that do not require immediate action but should typically be logged and monitored.
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function error($message, array $context = [])
-    {
-        $this->addRecord(Monolog::ERROR, $message, $context);
-    }
-
-    /**
-     * Adds a log record at the CRITICAL level.
-     *
-     * Critical condition. Example: Application component unavailable, unexpected exception.
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function critical($message, array $context = [])
-    {
-        $this->addRecord(Monolog::CRITICAL, $message, $context);
-    }
-
-    /**
-     * Adds a log record at the ALERT level.
-     *
-     * Action must be taken immediately. Example: Entire website down, database unavailable, etc.
-     * This should trigger the SMS alerts and wake you up.
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function alert($message, array $context = [])
-    {
-        $this->addRecord(Monolog::ALERT, $message, $context);
-    }
-
-    /**
-     * Adds a log record at the EMERGENCY level.
-     *
-     * System is unusable
-     *
-     * This method allows for compatibility with common interfaces.
-     *
-     * @param  string  $message The log message
-     * @param  array   $context The log context
-     * @return void
-     */
-    public function emergency($message, array $context = [])
-    {
-        $this->addRecord(Monolog::EMERGENCY, $message, $context);
-    }
-
-    /**
-     * Adds a log entry at the CRITICAL level, containing an exception.
-     *
-     * @param  Exception   $ex  The exception instance
-     * @param  bool        $direct
-     * @param  string|null $message
-     * @param  array       $context
-     * @param  string|null $logIdentifier
-     * @return void
+     * @deprecated
      */
     public function exception(Exception $ex, $direct = false, $message = null, $context = [], $logIdentifier = null)
     {
-        $trace   = $ex->getTrace();
-        $message = $message ? $message : $ex->getMessage();
-        $defaultContext = [
-            'log_identifier' => $logIdentifier ?? static::LOG_TYPE_EXCEPTION,
-            'exception' => [
-                'exception' => get_class($ex),
-                'message'   => $ex->getMessage(),
-                'file'      => $ex->getFile(),
-                'line'      => $ex->getLine(),
-                'trace'     => $trace
-            ]
-        ];
-
-        $context = array_merge($defaultContext, $context); // Custom overwrites default
-
-        $this->addRecord(Monolog::CRITICAL, $message, $context, $direct);
+        return $this->addRecord(Monolog::CRITICAL, $message, $context, $direct, $ex);
     }
 
-    /**
-     * Overwrite addRecord
-     *
-     * @param $level
-     * @param $message
-     * @param array $context
-     * @param bool $direct
-     */
-    public function addRecord($level, $message, array $context = [], $direct = false)
-    {
+    public function addRecord(
+        int $level,
+        string $message,
+        array $context = [],
+        $direct = false,
+        Exception $e = null
+    ): ?string {
         if($this->isTestEnv() || !$this->loggerActive) {
-            return;
+            return null;
+        }
+
+        if ($e && !isset($context['exception'])) {
+            $context['exception'] = [
+                'message' => $e->getMessage(),
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTrace(),
+            ];
         }
         
         $context[LoggerHelper::HEADER_RID] = $context[LoggerHelper::HEADER_RID] ?? $this->rid;
@@ -328,6 +224,8 @@ class Logger implements LoggerInterface
                 error_log('Failed to write log: ' . $e->getMessage());
             }
         }
+
+        return $context[LoggerHelper::HEADER_RID];
     }
 
     /**
@@ -351,23 +249,18 @@ class Logger implements LoggerInterface
         }
     }
 
-    /**
-     * Dispatch logging job with Laravel
-     *
-     * @param int $level
-     * @param string $message
-     * @param array $context
-     * @param array $serverData
-     */
-    protected function dispatchLaravelLoggingJob($level, $message, array $context = [], array $serverData = [])
-    {
+    protected function dispatchLaravelLoggingJob(
+        int $level,
+        string $message,
+        array $context = [],
+        array $serverData = []
+    ) {
         try {
             dispatch(new LoggingJob($level, $message, $context, $serverData, $this))->onQueue($this->loggerQueue);
         } catch (Exception $e) {
             error_log('Failed to dispatch Symfony log: ' . $e->getMessage());
             // On job error log directly
-            $this->exception($e, true);
-            $this->addRecord($level, $message, $context, true);
+            $this->addRecord($level, 'Failed to dispatch Laravel logging job', $context, true, $e);
         }
     }
 
@@ -388,7 +281,7 @@ class Logger implements LoggerInterface
         } catch (Exception $e) {
             error_log('Failed to dispatch Symfony log: ' . $e->getMessage());
             // On job error log directly
-            $this->addRecord($level, $message, $context, true);
+            $this->addRecord($level, 'Failed to dispatch Symfony log message', $context, true, $e);
         }
     }
 
@@ -507,7 +400,7 @@ class Logger implements LoggerInterface
      */
     public function isTestEnv()
     {
-        return stripos($this->env, 'testing') !== false ? true : false;
+        return stripos($this->env, 'test') !== false ? true : false;
     }
 
     /**
