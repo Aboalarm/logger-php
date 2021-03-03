@@ -211,8 +211,9 @@ class Logger implements LoggerInterface
                 'trace' => $e->getTrace(),
             ];
         }
-        
+
         $context[LoggerHelper::HEADER_RID] = $context[LoggerHelper::HEADER_RID] ?? $this->rid;
+        $context['log_id'] = $context[LoggerHelper::HEADER_RID] ?? $this->rid;
         $context['log_microtime'] = microtime(true); // Add request micro time to the context
 
         if($this->useJobQueue && !$direct) {
