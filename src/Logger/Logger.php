@@ -203,7 +203,7 @@ class Logger implements LoggerInterface
             return null;
         }
 
-        if($context['exception'] instanceof Exception) {
+        if(isset($context['exception']) && $context['exception'] instanceof Exception) {
             $e = $context['exception'];
             unset($context['exception']);
         }
