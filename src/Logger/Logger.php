@@ -198,8 +198,14 @@ class Logger implements LoggerInterface
         $direct = false,
         Exception $e = null
     ): ?string {
+
         if($this->isTestEnv() || !$this->loggerActive) {
             return null;
+        }
+
+        if($context['exception'] instanceof Exception) {
+            $e = $context['exception'];
+            unset($context['exception']);
         }
 
         if ($e && !isset($context['exception'])) {
@@ -208,13 +214,13 @@ class Logger implements LoggerInterface
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTrace(),
+                'trace' => $e->getTraceAsString(),
             ];
         }
 
         $context[LoggerHelper::HEADER_RID] = $context[LoggerHelper::HEADER_RID] ?? $this->rid;
         $context['log_id'] = $context[LoggerHelper::HEADER_RID] ?? $this->rid;
-        $context['log_microtime'] = microtime(true); // Add request micro time to the context
+        $context['log_microtime'] = microtime(true);
 
         if($this->useJobQueue && !$direct) {
             $this->dispatchLoggingJob($level, $message, $context, $_SERVER);
@@ -396,12 +402,9 @@ class Logger implements LoggerInterface
         return ($this->framework === static::FRAMEWORK_SYMFONY);
     }
     
-    /**
-     * @return bool True if test env
-     */
-    public function isTestEnv()
+    public function isTestEnv(): bool
     {
-        return stripos($this->env, 'test') !== false ? true : false;
+        return (stripos($this->env, 'test') !== false && $this->env != 'aboalarm.test');
     }
 
     /**
