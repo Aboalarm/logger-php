@@ -17,6 +17,7 @@ use Gelf\Publisher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Throwable;
 
 /**
  * Class Logger
@@ -143,42 +144,42 @@ class Logger implements LoggerInterface
         return $this->rid;
     }
 
-    public function debug($message, array $context = [], Exception $e = null): ?string
+    public function debug($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::DEBUG, $message, $context, false, $e);
     }
 
-    public function info($message, array $context = [], Exception $e = null): ?string
+    public function info($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::INFO, $message, $context, false, $e);
     }
 
-    public function notice($message, array $context = [], Exception $e = null): ?string
+    public function notice($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::NOTICE, $message, $context, false, $e);
     }
 
-    public function warning($message, array $context = [], Exception $e = null): ?string
+    public function warning($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::WARNING, $message, $context, false, $e);
     }
 
-    public function error($message, array $context = [], Exception $e = null): ?string
+    public function error($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::ERROR, $message, $context, false, $e);
     }
 
-    public function critical($message, array $context = [], Exception $e = null): ?string
+    public function critical($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::CRITICAL, $message, $context, false, $e);
     }
 
-    public function alert($message, array $context = [], Exception $e = null): ?string
+    public function alert($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::ALERT, $message, $context, false, $e);
     }
 
-    public function emergency($message, array $context = [], Exception $e = null): ?string
+    public function emergency($message, array $context = [], Throwable $e = null): ?string
     {
         return $this->addRecord(Monolog::EMERGENCY, $message, $context, false, $e);
     }
@@ -186,7 +187,7 @@ class Logger implements LoggerInterface
     /**
      * @deprecated
      */
-    public function exception(Exception $ex, $direct = false, $message = null, $context = [], $logIdentifier = null)
+    public function exception(Throwable $ex, $direct = false, $message = null, $context = [], $logIdentifier = null)
     {
         return $this->addRecord(Monolog::CRITICAL, $message, $context, $direct, $ex);
     }
@@ -196,14 +197,14 @@ class Logger implements LoggerInterface
         string $message,
         array $context = [],
         $direct = false,
-        Exception $e = null
+        Throwable $e = null
     ): ?string {
 
         if($this->isTestEnv() || !$this->loggerActive) {
             return null;
         }
 
-        if(isset($context['exception']) && $context['exception'] instanceof Exception) {
+        if(isset($context['exception']) && $context['exception'] instanceof Throwable) {
             $e = $context['exception'];
             unset($context['exception']);
         }
